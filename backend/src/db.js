@@ -25,6 +25,10 @@ async function initDB() {
     password: process.env.DB_PASSWORD || '',
   };
 
+  if (process.env.DB_SSL === 'true' || config.host.includes('aivencloud.com')) {
+    config.ssl = { rejectUnauthorized: false };
+  }
+
   try {
     // Attempt database server connection
     console.log(`Connecting to MySQL at ${config.host}:${config.port}...`);
