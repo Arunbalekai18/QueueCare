@@ -20,7 +20,7 @@ export default function AdminDashboard() {
   const [formSuccess, setFormSuccess] = useState('');
   const [formError, setFormError] = useState('');
 
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+  const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000').replace(/\/$/, '');
 
   // Fetch both active queue and history for analytics
   const fetchDashboardData = async () => {

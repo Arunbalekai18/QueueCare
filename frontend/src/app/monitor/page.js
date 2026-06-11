@@ -11,7 +11,7 @@ export default function MonitorPage() {
   const [flashAlert, setFlashAlert] = useState(false);
   const [time, setTime] = useState(null);
 
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+  const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000').replace(/\/$/, '');
 
   const fetchQueue = async () => {
     try {

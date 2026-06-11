@@ -8,7 +8,7 @@ function setupRoutes(io) {
   // Helper to get frontend base URL
   const getFrontendUrl = (req, id) => {
     // Next.js standard dev port is 3000. In prod, we can use env var or host
-    const origin = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const origin = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
     return `${origin}/tracker/${id}`;
   };
 

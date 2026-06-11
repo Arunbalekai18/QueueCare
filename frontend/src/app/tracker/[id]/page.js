@@ -12,9 +12,10 @@ export default function TrackerPage({ params }) {
   const [error, setError] = useState(null);
   const [connected, setConnected] = useState(false);
 
+  const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000').replace(/\/$/, '');
+
   const fetchPatientDetails = async () => {
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
       const response = await fetch(`${backendUrl}/api/patient/${id}`);
       
       if (!response.ok) {
@@ -36,7 +37,6 @@ export default function TrackerPage({ params }) {
   useEffect(() => {
     fetchPatientDetails();
 
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
     const socket = io(backendUrl);
 
     socket.on('connect', () => {
