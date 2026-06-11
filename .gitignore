@@ -1,0 +1,24 @@
+# Dependencies
+**/node_modules/
+**/package-lock.json
+
+# Builds & Cache
+**/.next/
+**/out/
+**/build/
+**/dist/
+.next/
+out/
+build/
+dist/
+
+# Configuration / Secret Keys
+**/.env
+.env
+
+# System Files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
