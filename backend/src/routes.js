@@ -7,9 +7,23 @@ function setupRoutes(io) {
 
   // Helper to get frontend base URL
   const getFrontendUrl = (req, id) => {
-    // Next.js standard dev port is 3000. In prod, we can use env var or host
-    const origin = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
-    return `${origin}/tracker/${id}`;
+    if (process.env.FRONTEND_URL) {
+      return `${process.env.FRONTEND_URL.replace(/\/$/, '')}/tracker/${id}`;
+    }
+    
+    // Dynamically check origin or referer header if present
+    const requestOrigin = req && (req.get('origin') || req.get('referer'));
+    if (requestOrigin) {
+      try {
+        const urlObj = new URL(requestOrigin);
+        return `${urlObj.origin}/tracker/${id}`;
+      } catch (e) {
+        return `${requestOrigin.replace(/\/$/, '')}/tracker/${id}`;
+      }
+    }
+    
+    // Default production fallback
+    return `https://queue-care-weld.vercel.app/tracker/${id}`;
   };
 
   // Helper to trigger automated pre-call SMS warnings for patients near their turn
