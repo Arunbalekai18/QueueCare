@@ -27,7 +27,12 @@ const corsOptions = {
     if (!origin) return callback(null, true);
     
     const normalizedOrigin = origin.replace(/\/$/, '');
-    const isAllowed = allowedOrigins.some(allowed => allowed.replace(/\/$/, '') === normalizedOrigin);
+    
+    // Check if origin matches any allowed origin exactly, OR is a Vercel preview domain for this project
+    const isVercelPreview = normalizedOrigin.endsWith('.vercel.app') && 
+                            (normalizedOrigin.includes('queue-care') || normalizedOrigin.includes('queue-care-weld'));
+                            
+    const isAllowed = allowedOrigins.some(allowed => allowed.replace(/\/$/, '') === normalizedOrigin) || isVercelPreview;
     
     if (isAllowed) {
       callback(null, true);
