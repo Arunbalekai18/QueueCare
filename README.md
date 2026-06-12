@@ -8,7 +8,7 @@ QueueCare is a real-time patient queue management system designed to eliminate w
 
 
 
-# 💡 The Problem
+💡 The Problem
 
 Patients in clinics often wait for hours with no idea how long is left, unable to step away without losing their place in line. QueueCare solves this by letting patients check in remotely, track their live position from anywhere, and get notified before their turn — so they can wait comfortably instead of sitting in a crowded room.
 
