@@ -25,11 +25,11 @@ Staff members have role-based accounts (Doctors and Receptionists) with access-c
 
 ### 4. 🔐 Role-Based Access Control (RBAC)
 Dedicated dashboard views for different clinic staff:
-* **Doctor (`doctor` / `doctor123`)**:
+* **Doctor**:
   * Authorized to call next patients and complete consultation sessions.
   * Features the **Clinic Analytics** tab powered by Chart.js (displaying today's hourly check-in volume trends and wait times per department).
   * Auto-hides the walk-in registration form to keep the medical panel clean.
-* **Receptionist (`receptionist` / `receptionist123`)**:
+* **Receptionist**:
   * Authorized to register walk-in patients and adjust queue ordering (Delay/Cancel).
   * Automatically blocks access to, and hides, the call controllers and analytics logs.
 
@@ -122,13 +122,3 @@ npm install
 npm run dev
 ```
 Open **[http://localhost:3000](http://localhost:3000)** in your browser!
-
----
-
-## 🔑 Staff Credentials & Security
-
-> [!WARNING]
-> **Production Security**: For security, default login credentials are automatically seeded into the database for immediate local development and demonstration testing only.
->
-> * **Seeded Roles**: `doctor` and `receptionist` accounts are initialized by default during the database startup script.
-> * **Action Required**: For staging or production deployments, immediately update the passwords in the `staff` table to strong, secure values and make sure default development credentials are changed. Do not publish plain text credentials in documentation.
