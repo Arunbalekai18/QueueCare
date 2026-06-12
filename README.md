@@ -1,6 +1,6 @@
 # 🏥 QueueCare | Patient Queue Management System
 
-QueueCare is a premium, real-time patient queue management system designed to eliminate waiting room congestion and enhance patient comfort. Patients scan a QR code at the clinic kiosk, check in on their mobile phones, track their live slot dynamically, and receive automated SMS updates when their turn is near.
+QueueCare is a real-time patient queue management system designed to eliminate waiting room congestion and enhance patient comfort. Patients scan a QR code at the clinic kiosk, check in on their mobile phones, track their live slot dynamically, and receive automated SMS updates when their turn is near.
 
 📱 Patient Check-in: /
 📺 TV Monitor (waiting room display): /monitor
