@@ -45,34 +45,6 @@ A background worker checks for patients who were called but didn't show up withi
 In-app live alerts plus SMS notifications (via Twilio) when a patient's turn is approaching.
 
 
-## 🏗️ System Architecture
-
-```mermaid
-graph TD
-    classDef client fill:#3b82f6,stroke:#1d4ed8,stroke-width:2px,color:#fff;
-    classDef server fill:#10b981,stroke:#047857,stroke-width:2px,color:#fff;
-    classDef db fill:#8b5cf6,stroke:#6d28d9,stroke-width:2px,color:#fff;
-    classDef external fill:#f59e0b,stroke:#b45309,stroke-width:2px,color:#fff;
-
-    PatientMobile["📱 Patient Mobile Live Tracker"]:::client
-    Kiosk["🖥️ Clinic QR Kiosk"]:::client
-    TVMonitor["📺 Waiting Room TV Monitor"]:::client
-    AdminPanel["🩺 Staff Admin Panel"]:::client
-
-    Backend["🚀 Express Backend Server"]:::server
-    MySQL[("💾 MySQL Database / In-Memory Fallback")]:::db
-    Twilio["💬 Twilio SMS Gateway"]:::external
-
-    Kiosk -->|Scans QR to Open| PatientMobile
-    PatientMobile -->|POST /api/checkin| Backend
-    AdminPanel -->|Manage Queue Actions| Backend
-    Backend -->|Read/Write Operations| MySQL
-    Backend -->|WebSocket Updates| PatientMobile
-    Backend -->|WebSocket Updates| TVMonitor
-    Backend -->|WebSocket Updates| AdminPanel
-    Backend -->|Send SMS Alerts| Twilio
-```
-
 
 ## 🛠️ Tech Stack
 
