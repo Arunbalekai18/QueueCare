@@ -8,14 +8,13 @@ QueueCare is a real-time patient queue management system designed to eliminate w
 
 
 
-💡 The Problem
+##💡 The Problem
 
 Patients in clinics often wait for hours with no idea how long is left, unable to step away without losing their place in line. QueueCare solves this by letting patients check in remotely, track their live position from anywhere, and get notified before their turn — so they can wait comfortably instead of sitting in a crowded room.
 
 
 ## 🌟 Key Features
 
-🌟 Key Features
 
 📋 Multi-Department Queuing
 
@@ -30,7 +29,6 @@ A mobile-first status page showing the patient's ticket number, live queue posit
 A large-screen display for the waiting room showing the patient currently being served and the "Up Next" list, with a QR code for new patients to check in directly from their phones.
 
 🔐 Role-Based Staff Access
-
 
 Doctor — calls next patients, completes consultations, views clinic analytics (check-in volume, wait times by department)
 Receptionist — registers walk-in patients, manages queue order (delay/cancel)
