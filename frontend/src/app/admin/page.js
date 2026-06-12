@@ -31,6 +31,7 @@ export default function AdminDashboard() {
   const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000').replace(/\/$/, '');
 
   const queueRef = useRef([]);
+  const socketRef = useRef(null);
   useEffect(() => {
     queueRef.current = queue;
   }, [queue]);
@@ -105,6 +106,7 @@ export default function AdminDashboard() {
 
     // Connect WebSocket
     const socket = io(backendUrl);
+    socketRef.current = socket;
 
     socket.on('connect', () => {
       addToast('🔌 Connected to live clinic console.', 'success');
@@ -120,7 +122,11 @@ export default function AdminDashboard() {
     });
 
     return () => {
-      socket.disconnect();
+      if (socketRef.current) {
+        socketRef.current.removeAllListeners();
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
     };
   }, [token]);
 
@@ -237,6 +243,11 @@ export default function AdminDashboard() {
 
   // Logout handler
   const handleLogout = () => {
+    if (socketRef.current) {
+      socketRef.current.removeAllListeners();
+      socketRef.current.disconnect();
+      socketRef.current = null;
+    }
     localStorage.removeItem('admin_token');
     setToken(null);
     setPassword('');
