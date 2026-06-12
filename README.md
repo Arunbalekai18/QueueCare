@@ -125,9 +125,10 @@ Open **[http://localhost:3000](http://localhost:3000)** in your browser!
 
 ---
 
-## 🔑 Seeded Demo Credentials
+## 🔑 Staff Credentials & Security
 
-| Role | Username | Password | Display Name |
-| :--- | :--- | :--- | :--- |
-| **Doctor** | `doctor` | `doctor123` | Dr. Arun Balekai |
-| **Receptionist** | `receptionist` | `receptionist123` | Clinic Receptionist |
+> [!WARNING]
+> **Production Security**: For security, default login credentials are automatically seeded into the database for immediate local development and demonstration testing only.
+>
+> * **Seeded Roles**: `doctor` and `receptionist` accounts are initialized by default during the database startup script.
+> * **Action Required**: For staging or production deployments, immediately update the passwords in the `staff` table to strong, secure values and make sure default development credentials are changed. Do not publish plain text credentials in documentation.
