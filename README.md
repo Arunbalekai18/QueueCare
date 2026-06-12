@@ -2,42 +2,48 @@
 
 QueueCare is a premium, real-time patient queue management system designed to eliminate waiting room congestion and enhance patient comfort. Patients scan a QR code at the clinic kiosk, check in on their mobile phones, track their live slot dynamically, and receive automated SMS updates when their turn is near.
 
-Staff members have role-based accounts (Doctors and Receptionists) with access-controlled dashboards tailored to their daily clinical workflows.
+📱 Patient Check-in: /
+📺 TV Monitor (waiting room display): /monitor
+🩺 Staff Admin Portal: /admin
 
----
+
+
+💡 The Problem
+
+Patients in clinics often wait for hours with no idea how long is left, unable to step away without losing their place in line. QueueCare solves this by letting patients check in remotely, track their live position from anywhere, and get notified before their turn — so they can wait comfortably instead of sitting in a crowded room.
+
 
 ## 🌟 Key Features
 
-### 1. 📋 Multi-Department Queuing
-* Supports separate, isolated queues for clinic departments: **General Medicine**, **Cardiology**, **Pediatrics**, and **Dermatology**.
-* Real-time wait calculations (`15 mins * peopleAhead`) run independently for each department's active queue.
+🌟 Key Features
 
-### 2. 🎟️ Digital Ticket Stub (Patient Tracker)
-* A mobile-first live status tracker styled as a physical ticket stub with styled tear lines, side notches, and dynamic contrast barcodes.
-* Live WebSocket connection displays queue positions ahead of the patient and estimated wait times in real-time.
-* A client-side cached **Dark/Light theme toggle** stores preferences in `localStorage` to avoid hydration flickering.
+📋 Multi-Department Queuing
 
-### 3. 📺 Waiting Room TV Monitor
-* Dedicated large-screen display showing the patient currently being served and the "Up Next" queue list.
-* Displays a dynamic registration QR code linking directly to the check-in page.
-* Real-time **dual-tone chime notifications** synthesized directly using browser-native Web Audio `AudioContext` (avoiding heavy audio asset downloads).
-* Full-screen flash alerts trigger dynamically when a new patient is called.
+Independent, isolated queues for each clinic department (General Medicine, Cardiology, Pediatrics, Dermatology), with real-time wait estimates calculated per department based on average consultation time × patients ahead.
 
-### 4. 🔐 Role-Based Access Control (RBAC)
-Dedicated dashboard views for different clinic staff:
-* **Doctor**:
-  * Authorized to call next patients and complete consultation sessions.
-  * Features the **Clinic Analytics** tab powered by Chart.js (displaying today's hourly check-in volume trends and wait times per department).
-  * Auto-hides the walk-in registration form to keep the medical panel clean.
-* **Receptionist**:
-  * Authorized to register walk-in patients and adjust queue ordering (Delay/Cancel).
-  * Automatically blocks access to, and hides, the call controllers and analytics logs.
+🎟️ Live Patient Ticket Tracker
 
-### 5. ⏰ Auto-Skip Stale No-Shows
-* A background server worker runs every 30 seconds to detect patients in `SERVING` status.
-* If a patient has been called but doesn't show up within the timeout window (configurable, default 2 mins for demo), the server auto-cancels their ticket, notifies the client via WebSockets, and reorders the queue.
+A mobile-first status page showing the patient's ticket number, live queue position, and estimated wait time — updating instantly via WebSockets, no refresh needed.
 
----
+📺 Waiting Room TV Monitor
+
+A large-screen display for the waiting room showing the patient currently being served and the "Up Next" list, with a QR code for new patients to check in directly from their phones.
+
+🔐 Role-Based Staff Access
+
+
+Doctor — calls next patients, completes consultations, views clinic analytics (check-in volume, wait times by department)
+Receptionist — registers walk-in patients, manages queue order (delay/cancel)
+
+
+⏰ Automatic No-Show Handling
+
+A background worker checks for patients who were called but didn't show up within a configurable timeout, automatically skipping them and reordering the queue.
+
+📲 Real-Time Notifications
+
+In-app live alerts plus SMS notifications (via Twilio) when a patient's turn is approaching.
+
 
 ## 🏗️ System Architecture
 
@@ -67,15 +73,19 @@ graph TD
     Backend -->|Send SMS Alerts| Twilio
 ```
 
----
 
-## 🛠️ Technology Stack
 
-* **Frontend**: Next.js (App Router), Vanilla CSS Custom Properties, HSL color tokens, Socket.io-client, Lucide icons, Chart.js, QRCode.
-* **Backend**: Node.js, Express, Socket.io (WebSocket announcements), mysql2 (relational MySQL client).
-* **SMS Gateway**: Twilio API.
+🛠️ Tech Stack
 
----
+Layer    Technology
+Frontend   HTML, CSS, JavaScript
+Backend    Node.js, Express
+Database   MySQL 
+Real-time  Socket.io (WebSockets)
+SMS        Twilio
+Hosting    Vercel (frontend), Render (backend)
+
+
 
 ## 🚀 Installation & Local Setup
 
