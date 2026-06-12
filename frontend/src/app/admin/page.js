@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { 
   Users, Clock, CheckCircle2, XCircle, Plus, 
-  Play, RotateCcw, AlertTriangle, ShieldCheck, ArrowRight 
+  Play, RotateCcw, AlertTriangle, ShieldCheck, ArrowRight, Lock, LogIn 
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -13,6 +13,13 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [toasts, setToasts] = useState([]);
+  
+  // Auth state
+  const [token, setToken] = useState(null);
+  const [isMounted, setIsMounted] = useState(false);
+  const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
   
   // Walk-in form states
   const [walkinName, setWalkinName] = useState('');
@@ -28,6 +35,16 @@ export default function AdminDashboard() {
     queueRef.current = queue;
   }, [queue]);
 
+  useEffect(() => {
+    setIsMounted(true);
+    const savedToken = localStorage.getItem('admin_token');
+    if (savedToken) {
+      setToken(savedToken);
+    } else {
+      setLoading(false); // Enable login view immediately
+    }
+  }, []);
+
   const addToast = (message, type = 'info') => {
     const id = Date.now();
     setToasts(prev => [...prev, { id, message, type, fading: false }]);
@@ -42,9 +59,19 @@ export default function AdminDashboard() {
 
   // Fetch both active queue and history for analytics
   const fetchDashboardData = async (isInitial = false) => {
+    if (!localStorage.getItem('admin_token')) return;
     try {
       const queueRes = await fetch(`${backendUrl}/api/queue`);
-      const historyRes = await fetch(`${backendUrl}/api/queue/all`);
+      const historyRes = await fetch(`${backendUrl}/api/queue/all`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+        }
+      });
+
+      if (historyRes.status === 401 || historyRes.status === 403) {
+        handleLogout();
+        throw new Error('Session expired. Please log in again.');
+      }
 
       if (!queueRes.ok || !historyRes.ok) {
         throw new Error('Failed to retrieve clinic queue metrics.');
@@ -72,6 +99,8 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
+    if (!token) return;
+    
     fetchDashboardData(true);
 
     // Connect WebSocket
@@ -92,14 +121,26 @@ export default function AdminDashboard() {
     return () => {
       socket.disconnect();
     };
-  }, []);
+  }, [token]);
 
   // Quick Action Handler Helper
   const handleAction = async (endpoint, id = null) => {
+    const activeToken = localStorage.getItem('admin_token');
+    if (!activeToken) return;
     try {
       const url = id ? `${backendUrl}/api/queue/${endpoint}/${id}` : `${backendUrl}/api/queue/${endpoint}`;
-      const res = await fetch(url, { method: 'POST' });
+      const res = await fetch(url, { 
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${activeToken}`
+        }
+      });
       
+      if (res.status === 401 || res.status === 403) {
+        handleLogout();
+        throw new Error('Session expired. Please log in again.');
+      }
+
       if (!res.ok) {
         const errData = await res.json();
         throw new Error(errData.error || 'Action failed');
@@ -159,6 +200,50 @@ export default function AdminDashboard() {
     }
   };
 
+  // Login handler
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    if (!password) {
+      setLoginError('Please enter the admin password.');
+      return;
+    }
+
+    setLoginLoading(true);
+    setLoginError('');
+
+    try {
+      const res = await fetch(`${backendUrl}/api/admin/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Login failed.');
+      }
+
+      const data = await res.json();
+      localStorage.setItem('admin_token', data.token);
+      setToken(data.token);
+      addToast('🔓 Logged in successfully.', 'success');
+    } catch (err) {
+      setLoginError(err.message);
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  // Logout handler
+  const handleLogout = () => {
+    localStorage.removeItem('admin_token');
+    setToken(null);
+    setPassword('');
+    setQueue([]);
+    setHistory([]);
+    addToast('🔒 Logged out successfully.', 'info');
+  };
+
   // Calculate Metrics
   const activeCount = queue.length;
   const completedToday = history.filter(p => p.status === 'COMPLETED').length;
@@ -177,6 +262,90 @@ export default function AdminDashboard() {
   const averageWaitTime = waitTimes.length 
     ? Math.round(waitTimes.reduce((a, b) => a + b, 0) / waitTimes.length / 60000) 
     : 0;
+
+  if (!isMounted) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh', flexDirection: 'column', gap: '1rem' }}>
+        <div className="logo-icon pulse-glow" style={{ width: '60px', height: '60px' }}>
+          <Clock size={30} color="#000" />
+        </div>
+        <p style={{ color: 'var(--text-secondary)' }}>Loading secure console...</p>
+      </div>
+    );
+  }
+
+  if (!token) {
+    return (
+      <div className="slide-in" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '65vh', padding: '1rem' }}>
+        {/* Toast Notifications */}
+        <div className="toast-container">
+          {toasts.map(t => (
+            <div key={t.id} className={`toast-card ${t.type} ${t.fading ? 'fade-out' : ''}`}>
+              <div style={{ flex: 1 }}>{t.message}</div>
+              <button 
+                onClick={() => setToasts(prev => prev.filter(item => item.id !== t.id))}
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.25rem', padding: '0 0 0 0.5rem', lineHeight: 1 }}
+              >
+                &times;
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <div className="glass-card pulse-glow" style={{ maxWidth: '400px', width: '100%', padding: '2.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
+            <div style={{ background: 'var(--accent-purple-glow)', padding: '1rem', borderRadius: '50px', color: 'var(--accent-purple)', border: '1px solid var(--accent-purple)' }}>
+              <Lock size={32} />
+            </div>
+          </div>
+          <h2 style={{ fontSize: '1.75rem', marginBottom: '0.5rem', textAlign: 'center', color: '#fff' }}>Admin Access</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '2rem', textAlign: 'center' }}>
+            Enter credential password to open clinic dashboard controls
+          </p>
+
+          {loginError && (
+            <div style={{ background: 'rgba(244, 63, 94, 0.1)', color: 'var(--accent-rose)', border: '1px solid rgba(244, 63, 94, 0.2)', padding: '0.75rem 1rem', borderRadius: '8px', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+              {loginError}
+            </div>
+          )}
+
+          <form onSubmit={handleLogin}>
+            <div className="form-group" style={{ marginBottom: '1.75rem' }}>
+              <label className="form-label" htmlFor="admin-password">Console Password</label>
+              <div style={{ position: 'relative' }}>
+                <Lock size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                <input
+                  id="admin-password"
+                  type="password"
+                  className="input-field"
+                  placeholder="••••••••"
+                  style={{ paddingLeft: '2.75rem', width: '100%' }}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={loginLoading}
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="btn btn-accent"
+              style={{ width: '100%', padding: '1rem', display: 'flex', gap: '0.75rem', justifyContent: 'center' }}
+              disabled={loginLoading}
+            >
+              <LogIn size={18} />
+              <span>{loginLoading ? 'Opening Console...' : 'Unlock Dashboard'}</span>
+            </button>
+          </form>
+
+          <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+            <ShieldCheck size={14} />
+            <span>Secure encryption active</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -210,6 +379,14 @@ export default function AdminDashboard() {
           <h1 style={{ fontSize: '2.25rem', marginBottom: '0.25rem' }}>Clinic Dashboard</h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>Manage patients, monitor queues, and call waiting tickets.</p>
         </div>
+        <button 
+          onClick={handleLogout}
+          className="btn btn-secondary"
+          style={{ padding: '0.6rem 1.25rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}
+        >
+          <LogIn size={16} style={{ transform: 'rotate(180deg)' }} />
+          <span>Log Out</span>
+        </button>
       </div>
 
       {error && (

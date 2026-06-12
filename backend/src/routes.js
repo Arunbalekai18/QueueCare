@@ -1,9 +1,23 @@
 const express = require('express');
 const db = require('./db');
 const twilioService = require('./twilio');
+const { generateToken, authMiddleware } = require('./auth');
 
 function setupRoutes(io) {
   const router = express.Router();
+
+  // POST Admin Login
+  router.post('/admin/login', (req, res) => {
+    const { password } = req.body;
+    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+    
+    if (password === adminPassword) {
+      const token = generateToken({ role: 'admin' });
+      return res.json({ token });
+    }
+    
+    res.status(401).json({ error: 'Invalid admin credentials.' });
+  });
 
   // Helper to get frontend base URL
   const getFrontendUrl = (req, id) => {
@@ -62,7 +76,7 @@ function setupRoutes(io) {
   });
 
   // GET all history (for admin analytics)
-  router.get('/queue/all', async (req, res) => {
+  router.get('/queue/all', authMiddleware, async (req, res) => {
     try {
       const history = await db.getAllPatients();
       res.json(history);
@@ -152,7 +166,7 @@ function setupRoutes(io) {
   });
 
   // POST Call Next Patient
-  router.post('/queue/call', async (req, res) => {
+  router.post('/queue/call', authMiddleware, async (req, res) => {
     try {
       const patient = await db.callNext();
       if (!patient) {
@@ -183,7 +197,7 @@ function setupRoutes(io) {
   });
 
   // POST Complete Patient
-  router.post('/queue/complete/:id', async (req, res) => {
+  router.post('/queue/complete/:id', authMiddleware, async (req, res) => {
     try {
       const patient = await db.completePatient(req.params.id);
       if (!patient) {
@@ -203,7 +217,7 @@ function setupRoutes(io) {
   });
 
   // POST Cancel Patient
-  router.post('/queue/cancel/:id', async (req, res) => {
+  router.post('/queue/cancel/:id', authMiddleware, async (req, res) => {
     try {
       const patient = await db.cancelPatient(req.params.id);
       if (!patient) {
@@ -223,7 +237,7 @@ function setupRoutes(io) {
   });
 
   // POST Delay / Snooze Patient
-  router.post('/queue/delay/:id', async (req, res) => {
+  router.post('/queue/delay/:id', authMiddleware, async (req, res) => {
     try {
       const patient = await db.delayPatient(req.params.id);
       if (!patient) {
