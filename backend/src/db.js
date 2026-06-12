@@ -6,13 +6,14 @@ let useInMemory = false;
 let mockPatients = [];
 let mockCounter = 1;
 
-// Initial mock data to seed for immediate visual delight
+// Initial mock data to seed for immediate visual delight (realistic clinic mid-morning entries)
 const initialMockData = [
-  { id: 101, name: "Alexander Wright", phone: "+15550199", status: "SERVING", position: 1, created_at: new Date(Date.now() - 45 * 60000), called_at: new Date(Date.now() - 5 * 60000), sms_sent_pre_call: true, sms_sent_called: true },
-  { id: 102, name: "Sophia Martinez", phone: "+15550123", status: "WAITING", position: 2, created_at: new Date(Date.now() - 30 * 60000), called_at: null, sms_sent_pre_call: true, sms_sent_called: false },
-  { id: 103, name: "Marcus Thompson", phone: "+15550145", status: "WAITING", position: 3, created_at: new Date(Date.now() - 20 * 60000), called_at: null, sms_sent_pre_call: false, sms_sent_called: false },
-  { id: 104, name: "Emily Zhao", phone: "+15550188", status: "WAITING", position: 4, created_at: new Date(Date.now() - 10 * 60000), called_at: null, sms_sent_pre_call: false, sms_sent_called: false },
-  { id: 105, name: "Liam O'Connor", phone: "+15550177", status: "WAITING", position: 5, created_at: new Date(Date.now() - 5 * 60000), called_at: null, sms_sent_pre_call: false, sms_sent_called: false }
+  { id: 101, name: "Rohan Sharma", phone: "+919876543210", status: "SERVING", position: 1, created_at: new Date(Date.now() - 45 * 60000), called_at: new Date(Date.now() - 5 * 60000), sms_sent_pre_call: true, sms_sent_called: true },
+  { id: 102, name: "Priya Patel", phone: "+918765432109", status: "WAITING", position: 2, created_at: new Date(Date.now() - 30 * 60000), called_at: null, sms_sent_pre_call: true, sms_sent_called: false },
+  { id: 103, name: "Amit Verma", phone: "+917654321098", status: "WAITING", position: 3, created_at: new Date(Date.now() - 20 * 60000), called_at: null, sms_sent_pre_call: false, sms_sent_called: false },
+  { id: 104, name: "Anjali Nair", phone: "+916543210987", status: "WAITING", position: 4, created_at: new Date(Date.now() - 15 * 60000), called_at: null, sms_sent_pre_call: false, sms_sent_called: false },
+  { id: 105, name: "Vikram Singh", phone: "+919543210986", status: "WAITING", position: 5, created_at: new Date(Date.now() - 10 * 60000), called_at: null, sms_sent_pre_call: false, sms_sent_called: false },
+  { id: 106, name: "Sneha Gupta", phone: "+918543210985", status: "WAITING", position: 6, created_at: new Date(Date.now() - 5 * 60000), called_at: null, sms_sent_pre_call: false, sms_sent_called: false }
 ];
 
 let pool = null;
@@ -85,7 +86,7 @@ async function initDB() {
     console.warn('⚠️  -------------------------------------------------------------\n');
     useInMemory = true;
     mockPatients = JSON.parse(JSON.stringify(initialMockData));
-    mockCounter = 106; // Continue after mock ids (101-105)
+    mockCounter = 107; // Continue after mock ids (101-106)
   }
 }
 

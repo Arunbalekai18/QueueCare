@@ -98,6 +98,7 @@ function setupRoutes(io) {
       
       let peopleAhead = 0;
       let estWaitTime = 0;
+      const AVG_CONSULTATION_TIME = 15;
 
       if (['WAITING', 'PRE_CALL'].includes(patient.status)) {
         // Count how many WAITING or PRE_CALL patients have smaller positions
@@ -105,10 +106,7 @@ function setupRoutes(io) {
           p => ['WAITING', 'PRE_CALL'].includes(p.status) && p.position < patient.position
         );
         peopleAhead = waitingBefore.length;
-        
-        // Est wait: 15 minutes per waiting patient plus 10 for the currently serving one if exists
-        const currentlyServing = activeQueue.find(p => p.status === 'SERVING');
-        estWaitTime = (peopleAhead * 15) + (currentlyServing ? 10 : 0);
+        estWaitTime = AVG_CONSULTATION_TIME * peopleAhead;
       }
 
       res.json({
@@ -131,18 +129,37 @@ function setupRoutes(io) {
       return res.status(400).json({ error: 'Name and Phone Number are required.' });
     }
 
+    const trimmedName = name.trim();
+    const trimmedPhone = phone.trim();
+
+    if (!trimmedName) {
+      return res.status(400).json({ error: 'Name cannot be empty or whitespace-only.' });
+    }
+
+    const phoneRegex = /^\+91\d{10}$/;
+    if (!phoneRegex.test(trimmedPhone)) {
+      return res.status(400).json({ error: 'Phone number must be in the format +91XXXXXXXXXX (e.g. +919876543210).' });
+    }
+
     try {
-      const patient = await db.addPatient(name, phone);
+      // Prevent duplicate active check-ins from the same phone number
+      const activeQueue = await db.getQueue();
+      const isDuplicate = activeQueue.some(p => p.phone === trimmedPhone);
+      if (isDuplicate) {
+        return res.status(400).json({ error: 'A patient with this phone number is already active in the queue.' });
+      }
+
+      const patient = await db.addPatient(trimmedName, trimmedPhone);
       const trackerUrl = getFrontendUrl(req, patient.id);
       
       // Send Welcome SMS
-      // Since position is dynamic, calculate how many active waiting are before them
       const queue = await db.getQueue();
       const waitingBefore = queue.filter(
         p => ['WAITING', 'PRE_CALL'].includes(p.status) && p.position < patient.position
       );
       const posInWait = waitingBefore.length + 1;
-      const estWait = (waitingBefore.length * 15) + (queue.some(p => p.status === 'SERVING') ? 10 : 0);
+      const AVG_CONSULTATION_TIME = 15;
+      const estWait = AVG_CONSULTATION_TIME * waitingBefore.length;
 
       const smsBody = `Welcome ${patient.name}! You are checked in at QueueCare. Your position in queue is #${posInWait}. Est. wait time: ${estWait} mins. Live tracker: ${trackerUrl}`;
       

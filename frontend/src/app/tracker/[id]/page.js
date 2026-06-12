@@ -49,16 +49,20 @@ export default function TrackerPage({ params }) {
 
         if (newStatus !== prevStatus) {
           if (newStatus === 'SERVING') {
-            addToast("🔊 It's your turn! Please proceed to Treatment Room 1.", 'success');
+            addToast("🔊 It's your turn — please head to the counter", 'success');
           } else if (newStatus === 'PRE_CALL') {
-            addToast(`🔔 Your turn is near! Only ${newAhead} patients ahead.`, 'warning');
+            addToast("🔔 You're next — please head to the counter", 'warning');
           } else if (newStatus === 'COMPLETED') {
             addToast("✅ Consultation completed. Thank you!", 'success');
           } else if (newStatus === 'CANCELLED') {
             addToast("❌ Your queue ticket was cancelled.", 'danger');
           }
-        } else if (newAhead < prevAhead && newStatus === 'WAITING') {
-          addToast(`🏃 Position updated! You moved forward in the queue. Only ${newAhead} patients ahead.`, 'info');
+        } else if (newAhead < prevAhead) {
+          if (newAhead === 1) {
+            addToast("🔔 You're next — please head to the counter", 'warning');
+          } else if (newStatus === 'WAITING') {
+            addToast(`🏃 Position updated! You moved forward in the queue. Only ${newAhead} patients ahead.`, 'info');
+          }
         }
       }
       
@@ -124,6 +128,7 @@ export default function TrackerPage({ params }) {
 
   const { patient, queueDetails } = data;
   const isServing = patient.status === 'SERVING';
+  const isNext = queueDetails.peopleAhead === 1 || patient.status === 'PRE_CALL';
 
   return (
     <div className="slide-in" style={{ maxWidth: '700px', margin: '1rem auto' }}>
@@ -142,6 +147,32 @@ export default function TrackerPage({ params }) {
           </div>
         ))}
       </div>
+
+      {/* Top sticky banner for urgent patient notification */}
+      {(isServing || isNext) && (
+        <div 
+          className="pulse-glow slide-in"
+          style={{ 
+            background: isServing ? 'var(--accent-teal-glow)' : 'var(--accent-amber-glow)', 
+            color: isServing ? 'var(--accent-teal)' : 'var(--accent-amber)', 
+            border: `1px solid ${isServing ? 'var(--accent-teal)' : 'var(--accent-amber)'}`, 
+            padding: '1.25rem 2rem', 
+            borderRadius: '12px', 
+            marginBottom: '1.5rem', 
+            textAlign: 'center', 
+            fontWeight: 600, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            gap: '0.75rem', 
+            fontSize: '1.1rem',
+            boxShadow: isServing ? 'var(--shadow-glow-teal)' : '0 0 30px rgba(245, 158, 11, 0.15)'
+          }}
+        >
+          <Bell size={20} className="float-animation" />
+          <span>{isServing ? "🔊 It's your turn — please head to the counter" : "🔔 You're next — please head to the counter"}</span>
+        </div>
+      )}
       
       {/* Back button */}
       <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', textDecoration: 'none', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
@@ -180,7 +211,7 @@ export default function TrackerPage({ params }) {
             </div>
             <h2 style={{ fontSize: '2rem', color: 'var(--accent-teal)', marginBottom: '0.5rem' }}>It's Your Turn!</h2>
             <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>
-              Please make your way to **Treatment Room 1** or report to the reception desk.
+              Please proceed to the counter or Treatment Room 1.
             </p>
           </div>
         ) : patient.status === 'WAITING' || patient.status === 'PRE_CALL' ? (
@@ -205,10 +236,10 @@ export default function TrackerPage({ params }) {
 
             </div>
 
-            {patient.status === 'PRE_CALL' ? (
-              <div style={{ background: 'var(--accent-amber-glow)', color: 'var(--accent-amber)', padding: '1rem', borderRadius: '10px', fontSize: '0.9rem', border: '1px solid rgba(245, 158, 11, 0.2)', display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'center' }}>
-                <Bell size={18} />
-                <span>Your turn is near! Please proceed back to the waiting area.</span>
+            {(patient.status === 'PRE_CALL' || queueDetails.peopleAhead === 1) ? (
+              <div className="pulse-glow" style={{ background: 'var(--accent-amber-glow)', color: 'var(--accent-amber)', padding: '1rem', borderRadius: '10px', fontSize: '0.95rem', border: '1px solid rgba(245, 158, 11, 0.3)', display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'center', fontWeight: 600 }}>
+                <Bell size={18} className="float-animation" />
+                <span>You're next — please head to the counter</span>
               </div>
             ) : (
               <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>

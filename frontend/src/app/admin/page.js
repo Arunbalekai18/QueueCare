@@ -173,8 +173,22 @@ export default function AdminDashboard() {
   // Submit manual walk-in check-in
   const handleWalkinSubmit = async (e) => {
     e.preventDefault();
-    if (!walkinName || !walkinPhone) {
-      setFormError('Name and Phone fields are required.');
+    const trimmedName = walkinName.trim();
+    const trimmedPhone = walkinPhone.trim();
+
+    if (!trimmedName) {
+      setFormError('Please enter a valid patient name.');
+      return;
+    }
+    if (!trimmedPhone) {
+      setFormError('Please enter a mobile phone number.');
+      return;
+    }
+
+    // Strict Indian phone number validation (+91XXXXXXXXXX)
+    const phoneRegex = /^\+91\d{10}$/;
+    if (!phoneRegex.test(trimmedPhone)) {
+      setFormError('Phone number must be in the format +91XXXXXXXXXX (e.g. +919876543210).');
       return;
     }
 
@@ -186,7 +200,7 @@ export default function AdminDashboard() {
       const res = await fetch(`${backendUrl}/api/checkin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: walkinName, phone: walkinPhone })
+        body: JSON.stringify({ name: trimmedName, phone: trimmedPhone })
       });
 
       if (!res.ok) {

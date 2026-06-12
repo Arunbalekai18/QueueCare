@@ -13,15 +13,22 @@ export default function CheckinPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!name || !phone) {
-      setError('Please fill in all fields.');
+    const trimmedName = name.trim();
+    const trimmedPhone = phone.trim();
+
+    if (!trimmedName) {
+      setError('Please enter a valid full name.');
+      return;
+    }
+    if (!trimmedPhone) {
+      setError('Please enter your mobile phone number.');
       return;
     }
     
-    // Simple phone verification (should begin with + or have numbers)
-    const phoneRegex = /^\+?[0-9\s\-]{7,15}$/;
-    if (!phoneRegex.test(phone)) {
-      setError('Please enter a valid phone number (e.g. +15551234567).');
+    // Strict Indian phone number validation (+91XXXXXXXXXX)
+    const phoneRegex = /^\+91\d{10}$/;
+    if (!phoneRegex.test(trimmedPhone)) {
+      setError('Phone number must be in the format +91XXXXXXXXXX (e.g. +919876543210).');
       return;
     }
 
@@ -35,7 +42,7 @@ export default function CheckinPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name, phone }),
+        body: JSON.stringify({ name: trimmedName, phone: trimmedPhone }),
       });
 
       if (!response.ok) {
