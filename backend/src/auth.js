@@ -72,8 +72,25 @@ function authMiddleware(req, res, next) {
   next();
 }
 
+/**
+ * Express middleware to guard routes and enforce required roles.
+ * @param {string[]} roles - Permitted roles (e.g. ['doctor'])
+ */
+function requireRole(roles) {
+  return (req, res, next) => {
+    if (!req.adminUser) {
+      return res.status(401).json({ error: 'Access denied. Authentication required.' });
+    }
+    if (!roles.includes(req.adminUser.role)) {
+      return res.status(403).json({ error: `Access denied. Role '${req.adminUser.role}' is unauthorized for this action.` });
+    }
+    next();
+  };
+}
+
 module.exports = {
   generateToken,
   verifyToken,
-  authMiddleware
+  authMiddleware,
+  requireRole
 };

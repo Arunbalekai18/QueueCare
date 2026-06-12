@@ -1,22 +1,33 @@
 const express = require('express');
 const db = require('./db');
 const twilioService = require('./twilio');
-const { generateToken, authMiddleware } = require('./auth');
+const { generateToken, authMiddleware, requireRole } = require('./auth');
 
 function setupRoutes(io) {
   const router = express.Router();
 
-  // POST Admin Login
-  router.post('/admin/login', (req, res) => {
-    const { password } = req.body;
-    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+  // POST Admin Login (Supporting multiple staff accounts with roles)
+  router.post('/admin/login', async (req, res) => {
+    const { username, password } = req.body;
     
-    if (password === adminPassword) {
-      const token = generateToken({ role: 'admin' });
-      return res.json({ token });
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Username and password are required.' });
     }
     
-    res.status(401).json({ error: 'Invalid admin credentials.' });
+    try {
+      const user = await db.getStaffUser(username.trim().toLowerCase());
+      if (user && user.password === password) {
+        const token = generateToken({
+          username: user.username,
+          name: user.name,
+          role: user.role
+        });
+        return res.json({ token });
+      }
+      res.status(401).json({ error: 'Invalid staff credentials.' });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
   });
 
   // Helper to get frontend base URL
@@ -43,23 +54,24 @@ function setupRoutes(io) {
   // Helper to trigger automated pre-call SMS warnings for patients near their turn
   async function checkAndSendPreCallSMS(req) {
     const queue = await db.getQueue();
-    // Filter down to patients still waiting (not already being served)
-    const waitingPatients = queue.filter(p => ['WAITING', 'PRE_CALL'].includes(p.status));
+    const departments = ['General Medicine', 'Cardiology', 'Pediatrics', 'Dermatology'];
     
-    // We notify patients who have 1 or 2 people ahead of them (index 1 and index 2 in waiting array)
-    for (let index = 0; index < waitingPatients.length; index++) {
-      const patient = waitingPatients[index];
-      const peopleAhead = index;
+    for (const dept of departments) {
+      const waitingInDept = queue.filter(p => p.department === dept && ['WAITING', 'PRE_CALL'].includes(p.status));
+      for (let index = 0; index < waitingInDept.length; index++) {
+        const patient = waitingInDept[index];
+        const peopleAhead = index;
 
-      if (peopleAhead > 0 && peopleAhead <= 2 && !patient.sms_sent_pre_call) {
-        const trackerUrl = getFrontendUrl(req, patient.id);
-        const smsBody = `Hi ${patient.name}, your turn is approaching at QueueCare! There are only ${peopleAhead} patient(s) ahead of you. Please head to the reception. Live link: ${trackerUrl}`;
-        
-        try {
-          await twilioService.sendSMS(patient.phone, smsBody);
-          await db.updateSMSFlags(patient.id, { sms_sent_pre_call: true });
-        } catch (err) {
-          console.error(`Failed pre-call SMS to ${patient.name}:`, err.message);
+        if (peopleAhead > 0 && peopleAhead <= 2 && !patient.sms_sent_pre_call) {
+          const trackerUrl = getFrontendUrl(req, patient.id);
+          const smsBody = `Hi ${patient.name}, your turn is approaching at QueueCare (${dept})! There are only ${peopleAhead} patient(s) ahead of you. Please head to the reception. Live link: ${trackerUrl}`;
+          
+          try {
+            await twilioService.sendSMS(patient.phone, smsBody);
+            await db.updateSMSFlags(patient.id, { sms_sent_pre_call: true });
+          } catch (err) {
+            console.error(`Failed pre-call SMS to ${patient.name}:`, err.message);
+          }
         }
       }
     }
@@ -76,7 +88,7 @@ function setupRoutes(io) {
   });
 
   // GET all history (for admin analytics)
-  router.get('/queue/all', authMiddleware, async (req, res) => {
+  router.get('/queue/all', authMiddleware, requireRole(['doctor']), async (req, res) => {
     try {
       const history = await db.getAllPatients();
       res.json(history);
@@ -101,9 +113,11 @@ function setupRoutes(io) {
       const AVG_CONSULTATION_TIME = 15;
 
       if (['WAITING', 'PRE_CALL'].includes(patient.status)) {
-        // Count how many WAITING or PRE_CALL patients have smaller positions
+        // Count how many WAITING or PRE_CALL patients in same department have smaller positions
         const waitingBefore = activeQueue.filter(
-          p => ['WAITING', 'PRE_CALL'].includes(p.status) && p.position < patient.position
+          p => p.department === patient.department && 
+               ['WAITING', 'PRE_CALL'].includes(p.status) && 
+               p.position < patient.position
         );
         peopleAhead = waitingBefore.length;
         estWaitTime = AVG_CONSULTATION_TIME * peopleAhead;
@@ -124,7 +138,14 @@ function setupRoutes(io) {
 
   // POST Patient self check-in
   router.post('/checkin', async (req, res) => {
-    const { name, phone } = req.body;
+    const { name, phone, department } = req.body;
+    const selectedDept = department || 'General Medicine';
+    const allowedDepts = ['General Medicine', 'Cardiology', 'Pediatrics', 'Dermatology'];
+    
+    if (!allowedDepts.includes(selectedDept)) {
+      return res.status(400).json({ error: 'Invalid department selection.' });
+    }
+
     if (!name || !phone) {
       return res.status(400).json({ error: 'Name and Phone Number are required.' });
     }
@@ -149,19 +170,21 @@ function setupRoutes(io) {
         return res.status(400).json({ error: 'A patient with this phone number is already active in the queue.' });
       }
 
-      const patient = await db.addPatient(trimmedName, trimmedPhone);
+      const patient = await db.addPatient(trimmedName, trimmedPhone, selectedDept);
       const trackerUrl = getFrontendUrl(req, patient.id);
       
       // Send Welcome SMS
       const queue = await db.getQueue();
       const waitingBefore = queue.filter(
-        p => ['WAITING', 'PRE_CALL'].includes(p.status) && p.position < patient.position
+        p => p.department === selectedDept && 
+             ['WAITING', 'PRE_CALL'].includes(p.status) && 
+             p.position < patient.position
       );
       const posInWait = waitingBefore.length + 1;
       const AVG_CONSULTATION_TIME = 15;
       const estWait = AVG_CONSULTATION_TIME * waitingBefore.length;
 
-      const smsBody = `Welcome ${patient.name}! You are checked in at QueueCare. Your position in queue is #${posInWait}. Est. wait time: ${estWait} mins. Live tracker: ${trackerUrl}`;
+      const smsBody = `Welcome ${patient.name}! You are checked in at QueueCare (${selectedDept}). Your position in queue is #${posInWait}. Est. wait time: ${estWait} mins. Live tracker: ${trackerUrl}`;
       
       try {
         await twilioService.sendSMS(patient.phone, smsBody);
@@ -183,15 +206,16 @@ function setupRoutes(io) {
   });
 
   // POST Call Next Patient
-  router.post('/queue/call', authMiddleware, async (req, res) => {
+  router.post('/queue/call', authMiddleware, requireRole(['doctor']), async (req, res) => {
+    const { department } = req.body;
     try {
-      const patient = await db.callNext();
+      const patient = await db.callNext(department);
       if (!patient) {
-        return res.status(404).json({ error: 'No patients waiting in queue.' });
+        return res.status(404).json({ error: `No patients waiting in ${department && department !== 'all' ? department : 'queue'}.` });
       }
 
       // Send Called SMS
-      const smsBody = `Hi ${patient.name}, it's your turn now at QueueCare! Please proceed to the treatment room/counter.`;
+      const smsBody = `Hi ${patient.name}, it's your turn now at QueueCare (${patient.department})! Please proceed to the counter.`;
       try {
         await twilioService.sendSMS(patient.phone, smsBody);
         await db.updateSMSFlags(patient.id, { sms_sent_called: true });
@@ -214,7 +238,7 @@ function setupRoutes(io) {
   });
 
   // POST Complete Patient
-  router.post('/queue/complete/:id', authMiddleware, async (req, res) => {
+  router.post('/queue/complete/:id', authMiddleware, requireRole(['doctor']), async (req, res) => {
     try {
       const patient = await db.completePatient(req.params.id);
       if (!patient) {
@@ -234,7 +258,7 @@ function setupRoutes(io) {
   });
 
   // POST Cancel Patient
-  router.post('/queue/cancel/:id', authMiddleware, async (req, res) => {
+  router.post('/queue/cancel/:id', authMiddleware, requireRole(['receptionist', 'doctor']), async (req, res) => {
     try {
       const patient = await db.cancelPatient(req.params.id);
       if (!patient) {
@@ -254,7 +278,7 @@ function setupRoutes(io) {
   });
 
   // POST Delay / Snooze Patient
-  router.post('/queue/delay/:id', authMiddleware, async (req, res) => {
+  router.post('/queue/delay/:id', authMiddleware, requireRole(['receptionist', 'doctor']), async (req, res) => {
     try {
       const patient = await db.delayPatient(req.params.id);
       if (!patient) {

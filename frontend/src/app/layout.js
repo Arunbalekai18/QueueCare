@@ -1,4 +1,5 @@
 import './global.css';
+import ThemeToggle from './ThemeToggle';
 
 export const metadata = {
   title: 'QueueCare | Patient Queue Management System',
@@ -10,6 +11,22 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <head>
         <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏥</text></svg>" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  const savedTheme = localStorage.getItem('theme') || 'dark';
+                  if (savedTheme === 'light') {
+                    document.documentElement.classList.add('light-theme');
+                  } else {
+                    document.documentElement.classList.remove('light-theme');
+                  }
+                } catch (e) {}
+              })();
+            `
+          }}
+        />
       </head>
       <body>
         <div className="app-container">
@@ -25,10 +42,11 @@ export default function RootLayout({ children }) {
               <span className="logo-text">QueueCare</span>
             </div>
             
-            <nav className="nav-links">
+            <nav className="nav-links" style={{ display: 'flex', alignItems: 'center' }}>
               <a href="/" className="nav-link" id="nav-checkin">Check-in</a>
               <a href="/monitor" className="nav-link" id="nav-monitor">TV Monitor</a>
               <a href="/admin" className="nav-link" id="nav-admin">Admin Portal</a>
+              <ThemeToggle />
             </nav>
           </header>
 

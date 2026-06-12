@@ -131,7 +131,7 @@ export default function TrackerPage({ params }) {
   const isNext = queueDetails.peopleAhead === 1 || patient.status === 'PRE_CALL';
 
   return (
-    <div className="slide-in" style={{ maxWidth: '700px', margin: '1rem auto' }}>
+    <div className="slide-in" style={{ maxWidth: '600px', margin: '1rem auto' }}>
       
       {/* Toast Notifications */}
       <div className="toast-container">
@@ -147,32 +147,6 @@ export default function TrackerPage({ params }) {
           </div>
         ))}
       </div>
-
-      {/* Top sticky banner for urgent patient notification */}
-      {(isServing || isNext) && (
-        <div 
-          className="pulse-glow slide-in"
-          style={{ 
-            background: isServing ? 'var(--accent-teal-glow)' : 'var(--accent-amber-glow)', 
-            color: isServing ? 'var(--accent-teal)' : 'var(--accent-amber)', 
-            border: `1px solid ${isServing ? 'var(--accent-teal)' : 'var(--accent-amber)'}`, 
-            padding: '1.25rem 2rem', 
-            borderRadius: '12px', 
-            marginBottom: '1.5rem', 
-            textAlign: 'center', 
-            fontWeight: 600, 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            gap: '0.75rem', 
-            fontSize: '1.1rem',
-            boxShadow: isServing ? 'var(--shadow-glow-teal)' : '0 0 30px rgba(245, 158, 11, 0.15)'
-          }}
-        >
-          <Bell size={20} className="float-animation" />
-          <span>{isServing ? "🔊 It's your turn — please head to the counter" : "🔔 You're next — please head to the counter"}</span>
-        </div>
-      )}
       
       {/* Back button */}
       <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', textDecoration: 'none', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
@@ -189,74 +163,127 @@ export default function TrackerPage({ params }) {
           </span>
         </div>
         <div>
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Ticket #{patient.id}</span>
+          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>TICKET #{patient.id}</span>
         </div>
       </div>
 
-      {/* Status card */}
-      <div className="glass-card" style={{ padding: '3rem 2rem', textAlign: 'center', position: 'relative', overflow: 'hidden', border: isServing ? '2px solid var(--accent-teal)' : '1px solid var(--border-color)', boxShadow: isServing ? 'var(--shadow-glow-teal)' : 'var(--shadow-lg)' }}>
+      {/* Top sticky banner for urgent patient notification */}
+      {(isServing || isNext) && (
+        <div 
+          className="pulse-glow slide-in"
+          style={{ 
+            background: isServing ? 'var(--accent-teal-glow)' : 'var(--accent-amber-glow)', 
+            color: isServing ? 'var(--accent-teal)' : 'var(--accent-amber)', 
+            border: `1px solid ${isServing ? 'var(--accent-teal)' : 'var(--accent-amber)'}`, 
+            padding: '1rem 1.5rem', 
+            borderRadius: '12px', 
+            marginBottom: '1.5rem', 
+            textAlign: 'center', 
+            fontWeight: 600, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            gap: '0.75rem', 
+            fontSize: '1rem',
+            boxShadow: isServing ? 'var(--shadow-glow-teal)' : '0 0 30px rgba(245, 158, 11, 0.15)'
+          }}
+        >
+          <Bell size={18} className="float-animation" />
+          <span>{isServing ? "🔊 It's your turn — please head to the counter" : "🔔 You're next — please head to the counter"}</span>
+        </div>
+      )}
+
+      {/* Status card - Styled as a Physical Clinic Ticket Stub */}
+      <div className="glass-card" style={{ padding: '2.5rem 2rem 2rem 2rem', textAlign: 'center', position: 'relative', overflow: 'hidden', border: isServing ? '2px solid var(--accent-teal)' : '1px solid var(--border-color)', boxShadow: isServing ? 'var(--shadow-glow-teal)' : 'var(--shadow-lg)' }}>
         
-        {isServing && (
-          <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '4px', background: 'linear-gradient(90deg, var(--accent-teal), var(--accent-purple))' }} />
-        )}
+        {/* Tear notches border effect at the top */}
+        <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '4px', background: 'linear-gradient(90deg, var(--accent-teal), var(--accent-purple))' }} />
 
-        <p className="form-label" style={{ color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Patient Name</p>
-        <h1 style={{ fontSize: '2.5rem', fontWeight: 700, marginBottom: '2rem' }}>{patient.name}</h1>
+        <span style={{ fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.2em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>QueueCare Ticket</span>
+        
+        <h1 style={{ fontSize: '2.25rem', fontWeight: 800, fontFamily: 'Outfit', marginTop: '0.5rem', marginBottom: '0.25rem' }}>{patient.name}</h1>
+        <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600, display: 'inline-flex', background: 'rgba(255,255,255,0.03)', padding: '0.25rem 0.75rem', borderRadius: '20px', border: '1px solid var(--border-color)', marginBottom: '1.5rem' }}>
+          {patient.department || 'General Medicine'}
+        </span>
 
-        {/* Visual state handler */}
+        {/* Dynamic State Layout */}
         {isServing ? (
-          <div className="slide-in" style={{ margin: '2rem 0' }}>
-            <div style={{ display: 'inline-flex', background: 'var(--accent-teal-glow)', padding: '1.5rem', borderRadius: '100px', color: 'var(--accent-teal)', marginBottom: '1.5rem', border: '1px solid var(--accent-teal)' }} className="pulse-glow">
-              <Bell size={48} />
+          <div className="slide-in" style={{ margin: '1.5rem 0' }}>
+            <div style={{ display: 'inline-flex', background: 'var(--accent-teal-glow)', padding: '1.25rem', borderRadius: '100px', color: 'var(--accent-teal)', marginBottom: '1.25rem', border: '1px solid var(--accent-teal)' }} className="pulse-glow">
+              <Bell size={40} />
             </div>
-            <h2 style={{ fontSize: '2rem', color: 'var(--accent-teal)', marginBottom: '0.5rem' }}>It's Your Turn!</h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>
-              Please proceed to the counter or Treatment Room 1.
+            <h2 style={{ fontSize: '1.75rem', color: 'var(--accent-teal)', marginBottom: '0.5rem' }}>It's Your Turn!</h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', lineHeight: '1.5' }}>
+              Please proceed to the counter or Consultation Room 1 in the <strong>{patient.department}</strong> department.
             </p>
           </div>
         ) : patient.status === 'WAITING' || patient.status === 'PRE_CALL' ? (
           <div className="slide-in">
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', margin: '2rem 0' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', margin: '1.5rem 0' }}>
               
-              <div className="glass-card" style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '1.5rem', borderRadius: '12px' }}>
-                <Users size={24} color="var(--accent-teal)" style={{ margin: '0 auto 0.5rem' }} />
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Patients Ahead</p>
-                <p style={{ fontFamily: 'Outfit', fontSize: '2.5rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+              <div className="glass-card" style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                <Users size={20} color="var(--accent-teal)" style={{ margin: '0 auto 0.5rem' }} />
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.25rem', fontWeight: 600 }}>Ahead of You</p>
+                <p style={{ fontFamily: 'Outfit', fontSize: '2.25rem', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1 }}>
                   {queueDetails.peopleAhead}
                 </p>
               </div>
 
-              <div className="glass-card" style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '1.5rem', borderRadius: '12px' }}>
-                <Clock size={24} color="var(--accent-purple)" style={{ margin: '0 auto 0.5rem' }} />
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Est. Wait Time</p>
-                <p style={{ fontFamily: 'Outfit', fontSize: '2.5rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                  {queueDetails.estWaitTime} <span style={{ fontSize: '1.25rem' }}>min</span>
+              <div className="glass-card" style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                <Clock size={20} color="var(--accent-purple)" style={{ margin: '0 auto 0.5rem' }} />
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.25rem', fontWeight: 600 }}>Est. Wait</p>
+                <p style={{ fontFamily: 'Outfit', fontSize: '2.25rem', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1 }}>
+                  {queueDetails.estWaitTime} <span style={{ fontSize: '1rem' }}>min</span>
                 </p>
               </div>
 
             </div>
 
-            {(patient.status === 'PRE_CALL' || queueDetails.peopleAhead === 1) ? (
-              <div className="pulse-glow" style={{ background: 'var(--accent-amber-glow)', color: 'var(--accent-amber)', padding: '1rem', borderRadius: '10px', fontSize: '0.95rem', border: '1px solid rgba(245, 158, 11, 0.3)', display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'center', fontWeight: 600 }}>
-                <Bell size={18} className="float-animation" />
+            {isNext ? (
+              <div className="pulse-glow" style={{ background: 'var(--accent-amber-glow)', color: 'var(--accent-amber)', padding: '0.85rem', borderRadius: '8px', fontSize: '0.9rem', border: '1px solid rgba(245, 158, 11, 0.3)', display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center', fontWeight: 600 }}>
+                <Bell size={16} className="float-animation" />
                 <span>You're next — please head to the counter</span>
               </div>
             ) : (
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                We will send you an SMS notification when you are next in line.
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                We will send you an SMS alert when you are next in line.
               </p>
             )}
           </div>
         ) : (
-          <div style={{ margin: '2rem 0' }}>
-            <h2 style={{ fontSize: '1.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-              {patient.status === 'COMPLETED' ? 'Session Completed' : 'Ticket Cancelled'}
+          <div style={{ margin: '1.5rem 0' }}>
+            <h2 style={{ fontSize: '1.5rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+              {patient.status === 'COMPLETED' ? 'Consultation Finished' : 'Ticket Cancelled'}
             </h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
               Thank you for choosing QueueCare.
             </p>
           </div>
         )}
+
+        {/* Physical Ticket Stub Tear Line */}
+        <div style={{ borderTop: '2px dashed var(--tear-line-color)', margin: '2rem 0', position: 'relative' }}>
+          {/* Side notches cutouts */}
+          <div style={{ position: 'absolute', left: '-2.75rem', top: '-10px', width: '20px', height: '20px', borderRadius: '50%', background: 'var(--bg-base)', borderRight: '1px solid var(--border-color)' }} />
+          <div style={{ position: 'absolute', right: '-2.75rem', top: '-10px', width: '20px', height: '20px', borderRadius: '50%', background: 'var(--bg-base)', borderLeft: '1px solid var(--border-color)' }} />
+        </div>
+
+        {/* Synthesized Digital Barcode */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', margin: '0.5rem 0' }}>
+          <div 
+            style={{ 
+              height: '35px', 
+              width: '160px', 
+              background: 'linear-gradient(90deg, var(--barcode-color) 2px, transparent 2px, var(--barcode-color) 3px, transparent 5px, var(--barcode-color) 7px, transparent 7px, var(--barcode-color) 11px, transparent 13px, var(--barcode-color) 15px, transparent 16px, var(--barcode-color) 18px, transparent 20px, var(--barcode-color) 22px, transparent 23px, var(--barcode-color) 25px)', 
+              backgroundSize: '24px 100%', 
+              opacity: 0.15 
+            }} 
+          />
+          <span style={{ fontFamily: 'monospace', fontSize: '0.7rem', color: 'var(--text-muted)', letterSpacing: '0.25em', textTransform: 'uppercase' }}>
+            QC-{patient.id}-{patient.department ? patient.department.substring(0,3) : 'GEN'}
+          </span>
+        </div>
+
       </div>
     </div>
   );

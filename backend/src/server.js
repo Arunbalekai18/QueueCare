@@ -81,6 +81,35 @@ async function startServer() {
       res.json({ status: 'online', time: new Date() });
     });
 
+    // Setup background auto-skip no-shows worker
+    const AUTO_SKIP_TIMEOUT_MINUTES = parseInt(process.env.AUTO_SKIP_TIMEOUT_MINUTES || '5');
+    setInterval(async () => {
+      try {
+        const activeQueue = await db.getQueue();
+        const servingPatients = activeQueue.filter(p => p.status === 'SERVING');
+        
+        for (const patient of servingPatients) {
+          if (patient.called_at) {
+            const calledTime = new Date(patient.called_at).getTime();
+            const elapsedTime = (Date.now() - calledTime) / 60000; // in minutes
+            
+            if (elapsedTime >= AUTO_SKIP_TIMEOUT_MINUTES) {
+              console.log(`[AUTO-SKIP] Auto-cancelling patient ${patient.name} (ID: ${patient.id}) in ${patient.department} due to no-show after ${Math.round(elapsedTime)} mins.`);
+              
+              // Skip/cancel patient
+              await db.cancelPatient(patient.id);
+              
+              // Trigger WS refresh
+              const updatedQueue = await db.getQueue();
+              io.emit('queue_updated', updatedQueue);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Auto-skip background worker error:', err);
+      }
+    }, 30000); // Check every 30 seconds
+
     server.listen(PORT, () => {
       console.log(`\n🚀 QueueCare Backend running on port ${PORT}`);
       console.log(`👉 REST API Endpoint: http://localhost:${PORT}/api`);

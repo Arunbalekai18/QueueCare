@@ -8,6 +8,7 @@ export default function CheckinPage() {
   const router = useRouter();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [department, setDepartment] = useState('General Medicine');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -42,7 +43,7 @@ export default function CheckinPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name: trimmedName, phone: trimmedPhone }),
+        body: JSON.stringify({ name: trimmedName, phone: trimmedPhone, department }),
       });
 
       if (!response.ok) {
@@ -141,6 +142,45 @@ export default function CheckinPage() {
                 onChange={(e) => setPhone(e.target.value)}
                 disabled={loading}
               />
+            </div>
+          </div>
+
+          {/* Department Selector */}
+          <div className="form-group" style={{ marginBottom: '2rem' }}>
+            <label className="form-label">Clinic Department</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '0.25rem' }}>
+              {[
+                { name: 'General Medicine', label: '🩺 General' },
+                { name: 'Cardiology', label: '❤️ Cardiology' },
+                { name: 'Pediatrics', label: '👶 Pediatrics' },
+                { name: 'Dermatology', label: '🛡️ Dermatology' }
+              ].map(dept => {
+                const isSelected = department === dept.name;
+                return (
+                  <button
+                    key={dept.name}
+                    type="button"
+                    onClick={() => setDepartment(dept.name)}
+                    style={{
+                      background: isSelected ? 'var(--accent-teal-glow)' : 'rgba(10, 15, 29, 0.5)',
+                      color: isSelected ? 'var(--accent-teal)' : 'var(--text-secondary)',
+                      border: `1px solid ${isSelected ? 'var(--accent-teal)' : 'var(--border-color)'}`,
+                      padding: '0.85rem 0.5rem',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      transition: 'var(--transition-fast)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.35rem'
+                    }}
+                  >
+                    <span>{dept.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
