@@ -73,6 +73,17 @@ async function initDB() {
       )
     `);
 
+    // Schema Migrations: Ensure 'department' column exists in case the table already existed
+    try {
+      await pool.query("ALTER TABLE patients ADD COLUMN department VARCHAR(50) DEFAULT 'General Medicine'");
+      console.log("Database Migration: Successfully added 'department' column to patients table.");
+    } catch (migrationError) {
+      // Ignore if the column already exists (ER_DUP_FIELDNAME / Duplicate column name)
+      if (!migrationError.message.includes('Duplicate column name') && migrationError.code !== 'ER_DUP_FIELDNAME') {
+        console.warn("Database Migration Warning:", migrationError.message);
+      }
+    }
+
     // Create staff table for RBAC login accounts
     await pool.query(`
       CREATE TABLE IF NOT EXISTS staff (
