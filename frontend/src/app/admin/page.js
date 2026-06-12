@@ -110,7 +110,8 @@ export default function AdminDashboard() {
       addToast('🔌 Connected to live clinic console.', 'success');
     });
 
-    socket.on('disconnect', () => {
+    socket.on('disconnect', (reason) => {
+      if (reason === 'io client disconnect') return;
       addToast('📡 Connection lost. Reconnecting...', 'danger');
     });
 

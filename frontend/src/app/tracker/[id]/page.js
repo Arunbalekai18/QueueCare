@@ -80,8 +80,9 @@ export default function TrackerPage({ params }) {
       addToast('🔌 Connected to live updates server.', 'success');
     });
 
-    socket.on('disconnect', () => {
+    socket.on('disconnect', (reason) => {
       setConnected(false);
+      if (reason === 'io client disconnect') return;
       addToast('📡 Connection lost. Reconnecting...', 'danger');
     });
 
