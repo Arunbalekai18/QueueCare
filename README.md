@@ -74,16 +74,16 @@ graph TD
 ```
 
 
+## 🛠️ Tech Stack
 
-🛠️ Tech Stack
-
-Layer    Technology
-Frontend   HTML, CSS, JavaScript
-Backend    Node.js, Express
-Database   MySQL 
-Real-time  Socket.io (WebSockets)
-SMS        Twilio
-Hosting    Vercel (frontend), Render (backend)
+| Layer | Technology |
+| :--- | :--- |
+| **Frontend** | HTML, CSS, JavaScript |
+| **Backend** | Node.js, Express |
+| **Database** | MySQL |
+| **Real-time** | Socket.io (WebSockets) |
+| **SMS** | Twilio |
+| **Hosting** | Vercel (frontend), Render (backend) |
 
 
 
