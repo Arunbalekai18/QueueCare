@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { 
   Users, Clock, CheckCircle2, XCircle, Plus, 
@@ -12,6 +12,7 @@ export default function AdminDashboard() {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [toasts, setToasts] = useState([]);
   
   // Walk-in form states
   const [walkinName, setWalkinName] = useState('');
@@ -22,8 +23,25 @@ export default function AdminDashboard() {
 
   const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000').replace(/\/$/, '');
 
+  const queueRef = useRef([]);
+  useEffect(() => {
+    queueRef.current = queue;
+  }, [queue]);
+
+  const addToast = (message, type = 'info') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type, fading: false }]);
+    
+    setTimeout(() => {
+      setToasts(prev => prev.map(t => t.id === id ? { ...t, fading: true } : t));
+      setTimeout(() => {
+        setToasts(prev => prev.filter(t => t.id !== id));
+      }, 250);
+    }, 5000);
+  };
+
   // Fetch both active queue and history for analytics
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = async (isInitial = false) => {
     try {
       const queueRes = await fetch(`${backendUrl}/api/queue`);
       const historyRes = await fetch(`${backendUrl}/api/queue/all`);
@@ -34,6 +52,14 @@ export default function AdminDashboard() {
 
       const queueData = await queueRes.json();
       const historyData = await historyRes.json();
+
+      // Check for new check-ins dynamically
+      if (!isInitial && queueRef.current.length > 0) {
+        const newCheckins = queueData.filter(newPat => !queueRef.current.some(oldPat => oldPat.id === newPat.id));
+        newCheckins.forEach(p => {
+          addToast(`🆕 New patient checked in: ${p.name} (#${p.id})`, 'success');
+        });
+      }
 
       setQueue(queueData);
       setHistory(historyData);
@@ -46,13 +72,21 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
-    fetchDashboardData();
+    fetchDashboardData(true);
 
     // Connect WebSocket
     const socket = io(backendUrl);
 
+    socket.on('connect', () => {
+      addToast('🔌 Connected to live clinic console.', 'success');
+    });
+
+    socket.on('disconnect', () => {
+      addToast('📡 Connection lost. Reconnecting...', 'danger');
+    });
+
     socket.on('queue_updated', () => {
-      fetchDashboardData();
+      fetchDashboardData(false);
     });
 
     return () => {
@@ -71,9 +105,20 @@ export default function AdminDashboard() {
         throw new Error(errData.error || 'Action failed');
       }
       
-      fetchDashboardData();
+      if (endpoint === 'call') {
+        const data = await res.json();
+        addToast(`🔊 Called next patient: ${data.patient.name} to Room 1!`, 'success');
+      } else if (endpoint === 'complete') {
+        addToast('✅ Marked consultation as completed.', 'success');
+      } else if (endpoint === 'cancel') {
+        addToast('❌ Queue ticket cancelled.', 'danger');
+      } else if (endpoint === 'delay') {
+        addToast('⏰ Snoozed/delayed patient position in queue.', 'warning');
+      }
+      
+      fetchDashboardData(false);
     } catch (err) {
-      alert(`Error: ${err.message}`);
+      addToast(`Error: ${err.message}`, 'danger');
     }
   };
 
@@ -104,9 +149,11 @@ export default function AdminDashboard() {
       setWalkinName('');
       setWalkinPhone('');
       setFormSuccess('Walk-in patient registered successfully!');
-      fetchDashboardData();
+      addToast('🆕 Registered walk-in patient successfully!', 'success');
+      fetchDashboardData(false);
     } catch (err) {
       setFormError(err.message);
+      addToast(`Registration failed: ${err.message}`, 'danger');
     } finally {
       setFormLoading(false);
     }
@@ -144,6 +191,20 @@ export default function AdminDashboard() {
 
   return (
     <div className="slide-in">
+      {/* Toast Notifications */}
+      <div className="toast-container">
+        {toasts.map(t => (
+          <div key={t.id} className={`toast-card ${t.type} ${t.fading ? 'fade-out' : ''}`}>
+            <div style={{ flex: 1 }}>{t.message}</div>
+            <button 
+              onClick={() => setToasts(prev => prev.filter(item => item.id !== t.id))}
+              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.25rem', padding: '0 0 0 0.5rem', lineHeight: 1 }}
+            >
+              &times;
+            </button>
+          </div>
+        ))}
+      </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
         <div>
           <h1 style={{ fontSize: '2.25rem', marginBottom: '0.25rem' }}>Clinic Dashboard</h1>

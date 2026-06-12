@@ -11,10 +11,23 @@ export default function TrackerPage({ params }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [connected, setConnected] = useState(false);
+  const [toasts, setToasts] = useState([]);
 
   const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000').replace(/\/$/, '');
 
-  const fetchPatientDetails = async () => {
+  const addToast = (message, type = 'info') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type, fading: false }]);
+    
+    setTimeout(() => {
+      setToasts(prev => prev.map(t => t.id === id ? { ...t, fading: true } : t));
+      setTimeout(() => {
+        setToasts(prev => prev.filter(t => t.id !== id));
+      }, 250);
+    }, 5000);
+  };
+
+  const fetchPatientDetails = async (isInitial = false) => {
     try {
       const response = await fetch(`${backendUrl}/api/patient/${id}`);
       
@@ -26,6 +39,29 @@ export default function TrackerPage({ params }) {
       }
       
       const resData = await response.json();
+      
+      // Compare and trigger toast alerts for real-time visual delight
+      if (!isInitial && data) {
+        const prevStatus = data.patient.status;
+        const newStatus = resData.patient.status;
+        const prevAhead = data.queueDetails.peopleAhead;
+        const newAhead = resData.queueDetails.peopleAhead;
+
+        if (newStatus !== prevStatus) {
+          if (newStatus === 'SERVING') {
+            addToast("🔊 It's your turn! Please proceed to Treatment Room 1.", 'success');
+          } else if (newStatus === 'PRE_CALL') {
+            addToast(`🔔 Your turn is near! Only ${newAhead} patients ahead.`, 'warning');
+          } else if (newStatus === 'COMPLETED') {
+            addToast("✅ Consultation completed. Thank you!", 'success');
+          } else if (newStatus === 'CANCELLED') {
+            addToast("❌ Your queue ticket was cancelled.", 'danger');
+          }
+        } else if (newAhead < prevAhead && newStatus === 'WAITING') {
+          addToast(`🏃 Position updated! You moved forward in the queue. Only ${newAhead} patients ahead.`, 'info');
+        }
+      }
+      
       setData(resData);
     } catch (err) {
       setError(err.message);
@@ -35,21 +71,23 @@ export default function TrackerPage({ params }) {
   };
 
   useEffect(() => {
-    fetchPatientDetails();
+    fetchPatientDetails(true);
 
     const socket = io(backendUrl);
 
     socket.on('connect', () => {
       setConnected(true);
+      addToast('🔌 Connected to live updates server.', 'success');
     });
 
     socket.on('disconnect', () => {
       setConnected(false);
+      addToast('📡 Connection lost. Reconnecting...', 'danger');
     });
 
     // Listen to global queue updates
     socket.on('queue_updated', () => {
-      fetchPatientDetails();
+      fetchPatientDetails(false);
     });
 
     // Clean up connections on unmount
@@ -88,6 +126,21 @@ export default function TrackerPage({ params }) {
 
   return (
     <div className="slide-in" style={{ maxWidth: '700px', margin: '1rem auto' }}>
+      
+      {/* Toast Notifications */}
+      <div className="toast-container">
+        {toasts.map(t => (
+          <div key={t.id} className={`toast-card ${t.type} ${t.fading ? 'fade-out' : ''}`}>
+            <div style={{ flex: 1 }}>{t.message}</div>
+            <button 
+              onClick={() => setToasts(prev => prev.filter(item => item.id !== t.id))}
+              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.25rem', padding: '0 0 0 0.5rem', lineHeight: 1 }}
+            >
+              &times;
+            </button>
+          </div>
+        ))}
+      </div>
       
       {/* Back button */}
       <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', textDecoration: 'none', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
